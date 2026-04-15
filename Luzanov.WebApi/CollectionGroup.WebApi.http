@@ -1,0 +1,6 @@
+@Luzanov.WebApi_HostAddress = http://localhost:5273
+
+GET {{Luzanov.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
