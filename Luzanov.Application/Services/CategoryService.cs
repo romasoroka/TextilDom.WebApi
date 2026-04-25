@@ -24,23 +24,12 @@ namespace Luzanov.Application.Services
             return _mapper.Map<IEnumerable<CategoryDto>>(categories);
         }
 
-        public async Task<IEnumerable<CategoryDto>> GetAllWithSubCategoriesAsync()
-        {
-            var categories = await _categoryRepo.GetAllWithSubCategoriesAsync();
-            return _mapper.Map<IEnumerable<CategoryDto>>(categories);
-        }
-
         public async Task<CategoryDto?> GetByIdAsync(int id)
         {
             var category = await _categoryRepo.GetByIdAsync(id);
             return category == null ? null : _mapper.Map<CategoryDto>(category);
         }
 
-        public async Task<CategoryDto?> GetByIdWithSubCategoriesAsync(int id)
-        {
-            var category = await _categoryRepo.GetByIdWithSubCategoriesAsync(id);
-            return category == null ? null : _mapper.Map<CategoryDto>(category);
-        }
 
         public async Task<CategoryDto> CreateAsync(CreateCategoryCommand command)
         {

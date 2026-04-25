@@ -7,7 +7,8 @@ namespace Luzanov.Application.Services.Abstractions
     {
         Task<IEnumerable<OrderDto>> GetAllAsync();
         Task<OrderDto?> GetByIdAsync(int id);
-        Task<OrderDto> CreateAsync(CreateOrderCommand command);
+        Task<CreateOrderResult> CreateAsync(CreateOrderCommand command);
+        Task<bool> HandleMonoWebhookAsync(MonoWebhookPayload payload);  
         Task<bool> UpdateAsync(UpdateOrderCommand command);
         Task<bool> DeleteAsync(int id);
     }

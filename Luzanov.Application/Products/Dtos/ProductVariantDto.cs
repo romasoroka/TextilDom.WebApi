@@ -3,31 +3,17 @@
     /// <summary>
     /// DTO варіанту товару з цінами
     /// </summary>
-    public class ProductVariantDto
+    namespace Luzanov.Application.Products.Dtos
     {
-        /// <summary>
-        /// Розмір товару
-        /// </summary>
-        public string Size { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Основна ціна (роздрібна)
-        /// </summary>
-        public decimal Price { get; set; }
-
-        /// <summary>
-        /// Ціна від 10 штук (опціонально)
-        /// </summary>
-        public decimal? PriceFrom10 { get; set; }
-
-        /// <summary>
-        /// Ціна від 20 штук (опціонально)
-        /// </summary>
-        public decimal? PriceFrom20 { get; set; }
-
-        /// <summary>
-        /// Ціна від 50 штук (опціонально)
-        /// </summary>
-        public decimal? PriceFrom50 { get; set; }
+        public class ProductVariantDto
+        {
+            public decimal Width { get; set; }
+            public decimal Height { get; set; }
+            public string? Colour { get; set; }
+            public decimal Price { get; set; }
+            public decimal? OldPrice { get; set; }
+            public decimal? PromoPrice { get; set; }
+            public int Stock { get; set; }
+        }
     }
 }

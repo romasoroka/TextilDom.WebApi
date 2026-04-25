@@ -8,16 +8,22 @@ namespace Luzanov.Domain.Models
         public int Id { get; set; }
         public string CustomerFullName { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
-        public string DeliveryMethod { get; set; } = string.Empty; // "Пошта" або "Самовивіз"
-        public string? PostService { get; set; } // Нова пошта, Укрпошта, Містекспрес, Делівері, Наш сервіс доставки
-        public string DeliveryAddress { get; set; } = string.Empty;
-        public string PaymentMethod { get; set; } = string.Empty; // Готівка, Картка, Оплата онлайн, Накладений платіж
+
+        // НП: місто і відділення
+        public string CityRef { get; set; } = string.Empty;
+        public string CityName { get; set; } = string.Empty;
+        public string WarehouseRef { get; set; } = string.Empty;
+        public string WarehouseAddress { get; set; } = string.Empty;
+
+        // Оплата через Mono
+        public string? MonoInvoiceId { get; set; }
+        public string PaymentStatus { get; set; } = "Очікує оплати"; 
+
         public decimal TotalAmount { get; set; }
-        public string OrderStatus { get; set; } = "Нове"; // Нове, В обробці, Відправлено, Виконано, Скасовано
+        public string OrderStatus { get; set; } = "Нове";
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public string? Comment { get; set; } // Коментар до замовлення
-        
-        // JSON для збереження списку продуктів
+        public string? Comment { get; set; }
+
         public string OrderItemsJson { get; set; } = string.Empty;
 
         [NotMapped]

@@ -1,5 +1,3 @@
-using Luzanov.Domain.Models;
-
 namespace Luzanov.Application.Orders.Dtos
 {
     public class OrderDto
@@ -7,10 +5,15 @@ namespace Luzanov.Application.Orders.Dtos
         public int Id { get; set; }
         public string CustomerFullName { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
-        public string DeliveryMethod { get; set; } = string.Empty;
-        public string? PostService { get; set; }
-        public string DeliveryAddress { get; set; } = string.Empty;
-        public string PaymentMethod { get; set; } = string.Empty;
+
+        public string CityRef { get; set; } = string.Empty;
+        public string CityName { get; set; } = string.Empty;
+        public string WarehouseRef { get; set; } = string.Empty;
+        public string WarehouseAddress { get; set; } = string.Empty;
+
+        public string? MonoInvoiceId { get; set; }
+        public string PaymentStatus { get; set; } = string.Empty;
+
         public decimal TotalAmount { get; set; }
         public string OrderStatus { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }

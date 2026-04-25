@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Luzanov.Application.Products.Commands;
 using Luzanov.Application.Products.Dtos;
+using Luzanov.Application.Products.Dtos.Luzanov.Application.Products.Dtos;
 using Luzanov.Domain.Models;
 
 namespace Luzanov.Application.MappingProfiles

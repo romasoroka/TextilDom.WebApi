@@ -29,14 +29,7 @@ namespace Luzanov.Infrastructure.Repositories
                 .ToListAsync();
         }
         
-        public async Task<List<Product>> GetBySubCategoryIdAsync(int subCategoryId)
-        {
-            return await _dbSet
-                .Include(p => p.Category)
-                .Include(p => p.SubCategory)
-                .Where(p => p.SubCategoryId == subCategoryId)
-                .ToListAsync();
-        }
+
         
         public override async Task<IEnumerable<Product>> GetAllAsync()
         {

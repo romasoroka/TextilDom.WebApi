@@ -48,30 +48,13 @@ namespace Luzanov.Domain.Models
     /// </summary>
     public class ProductVariant
     {
-        /// <summary>
-        /// Розмір товару
-        /// </summary>
-        public string Size { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Основна ціна (роздрібна)
-        /// </summary>
-        public decimal Price { get; set; }
-
-        /// <summary>
-        /// Ціна від 10 штук (опціонально)
-        /// </summary>
-        public decimal? PriceFrom10 { get; set; }
-
-        /// <summary>
-        /// Ціна від 20 штук (опціонально)
-        /// </summary>
-        public decimal? PriceFrom20 { get; set; }
-
-        /// <summary>
-        /// Ціна від 50 штук (опціонально)
-        /// </summary>
-        public decimal? PriceFrom50 { get; set; }
+        public decimal Width { get; set; }   // Ширина|24907
+        public decimal Height { get; set; }  // Висота|24906
+        public string? Colour { get; set; }  // Цвет|24909
+        public decimal Price { get; set; }   // Цена
+        public decimal? OldPrice { get; set; } // Старая цена
+        public decimal? PromoPrice { get; set; } // Цена промо
+        public int Stock { get; set; }       // Остатки
     }
 
     public class ProductImage

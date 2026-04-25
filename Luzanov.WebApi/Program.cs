@@ -3,9 +3,7 @@ using Luzanov.Application.MappingProfiles;
 using Luzanov.Application.Products.Validators;
 using Luzanov.Application.Users.Validators;
 using Luzanov.Application.Categories.Validators;
-using Luzanov.Application.SubCategories.Validators;
 using Luzanov.Application.Orders.Validators;
-using Luzanov.Application.Comments.Validators;
 using Luzanov.Application.Services;
 using Luzanov.Application.Services.Abstractions;
 using Luzanov.Infrastructure.Context;
@@ -38,6 +36,8 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<INovaPoshtaService, NovaPoshtaService>();
 
+builder.Services.AddHttpClient<IMonoService, MonoService>();
+
 builder.Services.AddHttpClient<ITelegramBotService, TelegramBotService>();
 
 builder.Services.AddAutoMapper(typeof(ProductProfile).Assembly);
@@ -47,9 +47,7 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateUserCommandValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductCommandValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateCategoryCommandValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<CreateSubCategoryCommandValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderCommandValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<CreateCommentCommandValidator>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

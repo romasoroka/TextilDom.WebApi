@@ -1,7 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.SqlServer;
+﻿using Luzanov.Domain.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Luzanov.Domain.Models;
 
 namespace Luzanov.Infrastructure.Configurations
 {
@@ -11,41 +10,37 @@ namespace Luzanov.Infrastructure.Configurations
         {
             builder.ToTable("Products");
 
-            // Primary key
             builder.HasKey(p => p.Id);
 
-            // Name
             builder.Property(p => p.Name)
-                   .IsRequired()
-                   .HasMaxLength(200);
+                .IsRequired()
+                .HasMaxLength(200);
 
-            // Discount
-            builder.Property(p => p.Discount)
-                   .HasColumnType("numeric(18,2)")
-                   .HasDefaultValue(0);
-
-            // Description
             builder.Property(p => p.Description)
-                   .HasMaxLength(2000);
+                .HasMaxLength(5000); // збільшили бо опис з Excel довгий
 
-            // Variants (Size + Price) 
             builder.Property(p => p.VariantsJson)
-                   .HasColumnName("Variants")
-                   .HasColumnType("text");
+                .HasColumnName("Variants")
+                .HasColumnType("jsonb");
 
             builder.Property(p => p.ProductImagesJson)
-                   .IsRequired()
-                   .HasColumnType("text");
+                .IsRequired()
+                .HasColumnType("jsonb");
 
-            // Flags
             builder.Property(p => p.IsSpecialOffer)
-                   .HasDefaultValue(false);
+                .HasDefaultValue(false);
 
             builder.Property(p => p.IsTop)
-                   .HasDefaultValue(false);
+                .HasDefaultValue(false);
 
             builder.Ignore(p => p.Variants);
             builder.Ignore(p => p.ProductImages);
+
+            // SubCategoryId видалено, CategoryId залишається
+            builder.HasOne(p => p.Category)
+                .WithMany(c => c.Products)
+                .HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

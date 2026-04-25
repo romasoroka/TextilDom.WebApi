@@ -13,17 +13,16 @@ namespace Luzanov.Infrastructure.Configurations
             builder.HasKey(u => u.Id);
 
             builder.Property(u => u.Username)
-                   .IsRequired()
-                   .HasColumnType("varchar(100)");
+                .IsRequired()
+                .HasColumnType("varchar(100)");
 
             builder.Property(u => u.PasswordHash)
-                   .IsRequired()
-                   .HasColumnType("varchar(500)");
+                .IsRequired()
+                .HasColumnType("varchar(500)");
 
             builder.Property(u => u.Role)
-                   .IsRequired()
-                   .HasColumnType("varchar(50)");
+                .IsRequired()
+                .HasColumnType("varchar(50)");
         }
     }
-
 }

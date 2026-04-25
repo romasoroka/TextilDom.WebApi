@@ -1,5 +1,5 @@
-using Luzanov.Application.Orders.Commands;
 using FluentValidation;
+using Luzanov.Application.Orders.Commands;
 
 namespace Luzanov.Application.Orders.Validators
 {
@@ -17,19 +17,19 @@ namespace Luzanov.Application.Orders.Validators
             RuleFor(o => o.PhoneNumber)
                 .NotEmpty().WithMessage("Номер телефону є обов'язковим.");
 
-            RuleFor(o => o.DeliveryMethod)
-                .NotEmpty().WithMessage("Спосіб доставки є обов'язковим.");
+            RuleFor(o => o.CityRef)
+                .NotEmpty().WithMessage("Місто є обов'язковим.");
 
-            RuleFor(o => o.DeliveryAddress)
-                .NotEmpty().WithMessage("Адреса доставки є обов'язковою.")
-                .MaximumLength(500).WithMessage("Адреса не може перевищувати 500 символів.");
-
-            RuleFor(o => o.PaymentMethod)
-                .NotEmpty().WithMessage("Спосіб оплати є обов'язковим.")
-                .MaximumLength(100).WithMessage("Спосіб оплати не може перевищувати 100 символів.");
+            RuleFor(o => o.WarehouseRef)
+                .NotEmpty().WithMessage("Відділення є обов'язковим.");
 
             RuleFor(o => o.OrderStatus)
-                .NotEmpty().WithMessage("Статус замовлення є обов'язковим.");
+                .NotEmpty().WithMessage("Статус замовлення є обов'язковим.")
+                .Must(s => new[] { "Нове", "В обробці", "Відправлено", "Виконано", "Скасовано" }.Contains(s))
+                .WithMessage("Невірний статус замовлення.");
+
+            RuleFor(o => o.Comment)
+                .MaximumLength(1000).WithMessage("Коментар не може перевищувати 1000 символів.");
         }
     }
 }

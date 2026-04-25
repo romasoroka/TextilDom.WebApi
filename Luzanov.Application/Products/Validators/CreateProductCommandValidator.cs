@@ -30,34 +30,14 @@ namespace Luzanov.Application.Products.Validators
 
             RuleForEach(p => p.Variants).ChildRules(variant =>
             {
-                variant.RuleFor(v => v.Size)
-                    .NotEmpty().WithMessage("Розмір не може бути порожнім.");
-                
+                variant.RuleFor(v => v.Width)
+                    .GreaterThan(0).WithMessage("Ширина має бути більше 0.");
+                variant.RuleFor(v => v.Height)
+                    .GreaterThan(0).WithMessage("Висота має бути більше 0.");
                 variant.RuleFor(v => v.Price)
-                    .GreaterThan(0).WithMessage("Основна ціна має бути більше 0.");
-
-                // Валідація оптових цін (якщо вказані)
-                variant.RuleFor(v => v.PriceFrom10)
-                    .GreaterThan(0).When(v => v.PriceFrom10.HasValue)
-                    .WithMessage("Ціна від 10 шт має бути більше 0.")
-                    .LessThan(v => v.Price).When(v => v.PriceFrom10.HasValue)
-                    .WithMessage("Ціна від 10 шт має бути менше основної ціни.");
-
-                variant.RuleFor(v => v.PriceFrom20)
-                    .GreaterThan(0).When(v => v.PriceFrom20.HasValue)
-                    .WithMessage("Ціна від 20 шт має бути більше 0.")
-                    .LessThan(v => v.Price).When(v => v.PriceFrom20.HasValue)
-                    .WithMessage("Ціна від 20 шт має бути менше основної ціни.")
-                    .LessThanOrEqualTo(v => v.PriceFrom10 ?? decimal.MaxValue).When(v => v.PriceFrom20.HasValue && v.PriceFrom10.HasValue)
-                    .WithMessage("Ціна від 20 шт має бути менше або дорівнювати ціні від 10 шт.");
-
-                variant.RuleFor(v => v.PriceFrom50)
-                    .GreaterThan(0).When(v => v.PriceFrom50.HasValue)
-                    .WithMessage("Ціна від 50 шт має бути більше 0.")
-                    .LessThan(v => v.Price).When(v => v.PriceFrom50.HasValue)
-                    .WithMessage("Ціна від 50 шт має бути менше основної ціни.")
-                    .LessThanOrEqualTo(v => v.PriceFrom20 ?? decimal.MaxValue).When(v => v.PriceFrom50.HasValue && v.PriceFrom20.HasValue)
-                    .WithMessage("Ціна від 50 шт має бути менше або дорівнювати ціні від 20 шт.");
+                    .GreaterThan(0).WithMessage("Ціна має бути більше 0.");
+                variant.RuleFor(v => v.Stock)
+                    .GreaterThanOrEqualTo(0).WithMessage("Залишок не може бути від'ємним.");
             });
 
             RuleFor(p => p.CategoryId)

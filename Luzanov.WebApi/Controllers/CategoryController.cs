@@ -18,20 +18,16 @@ namespace Luzanov.WebApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] bool includeSubCategories = false)
+        public async Task<IActionResult> GetAll()
         {
-            var categories = includeSubCategories
-                ? await _categoryService.GetAllWithSubCategoriesAsync()
-                : await _categoryService.GetAllAsync();
+            var categories = await _categoryService.GetAllAsync();
             return Ok(categories);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id, [FromQuery] bool includeSubCategories = false)
+        public async Task<IActionResult> GetById(int id)
         {
-            var category = includeSubCategories
-                ? await _categoryService.GetByIdWithSubCategoriesAsync(id)
-                : await _categoryService.GetByIdAsync(id);
+            var category =  await _categoryService.GetByIdAsync(id);
 
             if (category == null)
                 return NotFound(new { message = "Category is not found" });

@@ -20,24 +20,35 @@ namespace Luzanov.Infrastructure.Configurations
                 .HasMaxLength(20)
                 .HasColumnType("varchar(20)");
 
-            builder.Property(o => o.DeliveryMethod)
+            builder.Property(o => o.CityRef)
                 .IsRequired()
-                .HasMaxLength(50)
-                .HasColumnType("varchar(50)");
-
-            builder.Property(o => o.PostService)
                 .HasMaxLength(100)
                 .HasColumnType("varchar(100)");
 
-            builder.Property(o => o.DeliveryAddress)
+            builder.Property(o => o.CityName)
+                .IsRequired()
+                .HasMaxLength(200)
+                .HasColumnType("varchar(200)");
+
+            builder.Property(o => o.WarehouseRef)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnType("varchar(100)");
+
+            builder.Property(o => o.WarehouseAddress)
                 .IsRequired()
                 .HasMaxLength(500)
                 .HasColumnType("varchar(500)");
 
-            builder.Property(o => o.PaymentMethod)
-                .IsRequired()
+            builder.Property(o => o.MonoInvoiceId)
                 .HasMaxLength(100)
                 .HasColumnType("varchar(100)");
+
+            builder.Property(o => o.PaymentStatus)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasColumnType("varchar(50)")
+                .HasDefaultValue("ќч≥куЇ оплати");
 
             builder.Property(o => o.TotalAmount)
                 .HasColumnType("decimal(18,2)");
