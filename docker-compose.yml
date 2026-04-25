@@ -1,12 +1,12 @@
 services:
   postgres:
     image: postgres:16
-    container_name: Luzanov-postgres
+    container_name: Textildom-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: Luzanov_local
+      POSTGRES_DB: Textildom_local
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
     volumes:

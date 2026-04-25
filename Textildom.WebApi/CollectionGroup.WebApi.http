@@ -1,0 +1,6 @@
+@Textildom.WebApi_HostAddress = http://localhost:5273
+
+GET {{Textildom.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
