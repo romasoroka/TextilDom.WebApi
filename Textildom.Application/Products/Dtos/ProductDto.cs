@@ -1,30 +1,28 @@
 ﻿using Textildom.Application.Products.Dtos.Textildom.Application.Products.Dtos;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Textildom.Application.Products.Dtos
 {
-
     public class ProductDto
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
-        public decimal Discount { get; set; }
         public string Description { get; set; } = string.Empty;
-        public List<ProductVariantDto> Variants { get; set; } = new();
-
-        public List<ProductImageDto> ProductImages { get; set; } = new();
-
+        public string? Manufacturer { get; set; }
+        public string? Material { get; set; }
+        public string? Colour { get; set; }
+        public string? Features { get; set; }
+        public string? CareInstructions { get; set; }
+        public string? Fastening { get; set; }
+        public string? ProductType { get; set; }
+        public string? Purpose { get; set; }
+        public string? Decoration { get; set; }
+        public string? Completeness { get; set; }
+        public int? ItemCount { get; set; }
         public bool IsSpecialOffer { get; set; }
         public bool IsTop { get; set; }
-
         public int? CategoryId { get; set; }
         public string? CategoryName { get; set; }
-        public int? SubCategoryId { get; set; }
-        public string? SubCategoryName { get; set; }
+        public List<ProductVariantDto> Variants { get; set; } = new();
+        public List<ProductImageDto> ProductImages { get; set; } = new();
     }
-
 }

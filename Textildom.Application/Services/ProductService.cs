@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using ClosedXML.Excel;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Textildom.Application.IRepositories;
 using Textildom.Application.Products.Commands;
 using Textildom.Application.Products.Dtos;
@@ -62,23 +64,21 @@ namespace Textildom.Application.Services
             using var stream = command.File.OpenReadStream();
             using var workbook = new XLWorkbook(stream);
             var sheet = workbook.Worksheet(1);
-            var rows = sheet.RowsUsed().Skip(1).ToList(); // пропускаємо заголовок
+            var rows = sheet.RowsUsed().ToList();
+            if (rows.Count < 2) return result;
 
-            // Читаємо заголовки щоб знайти індекси колонок
-            var headerRow = sheet.Row(1);
+            var headerRow = rows[0];
             var headers = headerRow.Cells()
                 .Select((cell, idx) => new { Name = cell.GetString().Trim(), Index = idx + 1 })
                 .ToDictionary(h => h.Name, h => h.Index);
 
             int Col(string name) => headers.TryGetValue(name, out var idx) ? idx : -1;
+            string GetCell(IXLRow row, int colIndex) => colIndex > 0 ? row.Cell(colIndex).GetString().Trim() : "";
 
-            // Групуємо рядки по базовій назві (колонка "Назва (укр)")
-            // Базова назва — це назва без розміру в кінці (напр. "100х170")
-            var grouped = rows
-                .GroupBy(row => ExtractBaseName(row.Cell(Col("Назва (укр)")).GetString()))
+            // Групуємо по базовій назві (без розміру в кінці)
+            var grouped = rows.Skip(1)
+                .GroupBy(row => ExtractBaseName(GetCell(row, Col("Назва (укр)"))))
                 .ToList();
-
-            var allProducts = await _productRepo.GetAllAsync();
 
             foreach (var group in grouped)
             {
@@ -89,82 +89,81 @@ namespace Textildom.Application.Services
 
                     var firstRow = group.First();
 
-                    // Збираємо варіанти з усіх рядків групи
-                    var variants = group.Select(row =>
+                    // Кожен рядок = окремий варіант
+                    var variants = group.Select(row => new ProductVariant
                     {
-                        var widthCol = Col("Ширина|24907");
-                        var heightCol = Col("Висота|24906");
-                        var colourCol = Col("Цвет|24909");
-                        var priceCol = Col("Цена");
-                        var oldPriceCol = Col("Старая цена");
-                        var promoPriceCol = Col("Цена промо");
-                        var stockCol = Col("Остатки");
-
-                        return new ProductVariant
-                        {
-                            Width = widthCol > 0 ? ParseDecimal(row.Cell(widthCol).GetString()) : 0,
-                            Height = heightCol > 0 ? ParseDecimal(row.Cell(heightCol).GetString()) : 0,
-                            Colour = colourCol > 0 ? row.Cell(colourCol).GetString().Trim() : null,
-                            Price = priceCol > 0 ? ParseDecimal(row.Cell(priceCol).GetString()) : 0,
-                            OldPrice = oldPriceCol > 0 ? ParseNullableDecimal(row.Cell(oldPriceCol).GetString()) : null,
-                            PromoPrice = promoPriceCol > 0 ? ParseNullableDecimal(row.Cell(promoPriceCol).GetString()) : null,
-                            Stock = stockCol > 0 ? (int)ParseDecimal(row.Cell(stockCol).GetString()) : 0,
-                        };
+                        Width = ParseDecimal(GetCell(row, Col("Ширина|24907"))),
+                        Height = ParseDecimal(GetCell(row, Col("Высота|24906"))),
+                        Colour = GetCell(row, Col("Цвет|24909")),
+                        Price = ParseDecimal(GetCell(row, Col("Цена"))),
+                        OldPrice = ParseNullableDecimal(GetCell(row, Col("Старая цена"))),
+                        InStock = GetCell(row, Col("Наличие")).Contains("наличии", StringComparison.OrdinalIgnoreCase),
+                        Quantity = GetCell(row, Col("Комплектация;UA|24482")),
                     }).ToList();
 
-                    // Збираємо фото — беремо з першого рядка, розділяємо по ";"
-                    var imagesCol = Col("Изображения");
-                    var imageUrls = imagesCol > 0
-                        ? firstRow.Cell(imagesCol).GetString()
-                            .Split(';', StringSplitOptions.RemoveEmptyEntries)
-                            .Select((url, i) => new ProductImage
-                            {
-                                Url = url.Trim(),
-                                IsMain = i == 0,
-                                Colour = null
-                            }).ToList()
-                        : new List<ProductImage>();
-
-                    var descCol = Col("Полное описание (UA)");
-                    var description = descCol > 0 ? firstRow.Cell(descCol).GetString().Trim() : "";
-
-                    // Перевіряємо чи вже існує продукт з такою назвою
-                    var existing = allProducts.FirstOrDefault(p =>
-                        string.Equals(p.Name, baseName, StringComparison.OrdinalIgnoreCase));
-
-                    if (existing != null)
-                    {
-                        // Оновлюємо варіанти та фото
-                        existing.Variants = variants;
-                        existing.ProductImages = imageUrls;
-                        existing.Description = description;
-                        await _productRepo.UpdateAsync(existing);
-                        result.Updated++;
-                    }
-                    else
-                    {
-                        var product = new Product
+                    // Фото з першого рядка групи
+                    var imagesRaw = GetCell(firstRow, Col("Изображения"));
+                    var images = imagesRaw
+                        .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                        .Select((url, i) => new ProductImage
                         {
-                            Name = baseName,
-                            Description = description,
-                            Variants = variants,
-                            ProductImages = imageUrls,
-                            IsSpecialOffer = false,
-                            IsTop = false,
-                        };
-                        await _productRepo.AddAsync(product);
-                        result.Created++;
-                    }
+                            Url = url.Trim(),
+                            IsMain = i == 0,
+                            Colour = null
+                        }).ToList();
+
+                    var product = new Product
+                    {
+                        Name = baseName,
+                        Description = GetCell(firstRow, Col("Полное описание (UA)")),
+                        Manufacturer = GetCell(firstRow, Col("Производитель")),
+                        Material = GetCell(firstRow, Col("Материал|24904")),
+                        Colour = GetCell(firstRow, Col("Цвет|24909")),
+                        Features = GetCell(firstRow, Col("Особенности|130872")),
+                        CareInstructions = GetCell(firstRow, Col("Рекомендации по уходу|122426")),
+                        Fastening = GetCell(firstRow, Col("Способ крепления|24905")),
+                        ProductType = GetCell(firstRow, Col("Тип|24902")),
+                        Purpose = GetCell(firstRow, Col("Назначение|244048")),
+                        Decoration = GetCell(firstRow, Col("Декорирование|113211")),
+                        Variants = variants,
+                        ProductImages = images,
+                        CategoryId = null,
+                        IsSpecialOffer = false,
+                        IsTop = false,
+                    };
+
+                    await _productRepo.AddAsync(product);
+                    result.Created++;
                 }
                 catch (Exception ex)
                 {
-                    result.Errors.Add($"Помилка для '{group.Key}': {ex.Message}");
+                    result.Errors.Add($"Група '{group.Key}': {ex.Message}");
                     result.Skipped++;
                 }
             }
 
             return result;
         }
+
+        private static string ExtractBaseName(string fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName)) return fullName;
+            return Regex.Replace(fullName.Trim(), @"\s+\d+[хxХX]\d+\s*$", "").Trim();
+        }
+
+        private static decimal ParseDecimal(string value)
+            => decimal.TryParse(value.Replace(",", "."), NumberStyles.Any,
+                CultureInfo.InvariantCulture, out var r) ? r : 0;
+
+        private static decimal? ParseNullableDecimal(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value == "0") return null;
+            return decimal.TryParse(value.Replace(",", "."), NumberStyles.Any,
+                CultureInfo.InvariantCulture, out var r) ? r : null;
+        }
+
+        private static int? ParseNullableInt(string value)
+            => int.TryParse(value, out var r) ? r : null;
 
         public async Task<bool> UpdateAsync(UpdateProductCommand command)
         {
@@ -195,25 +194,5 @@ namespace Textildom.Application.Services
             }
         }
 
-        // "Комплект Штор Льон Блекаут Бежевий 2 шт 100х170" → "Комплект Штор Льон Блекаут Бежевий 2 шт"
-        private static string ExtractBaseName(string fullName)
-        {
-            if (string.IsNullOrWhiteSpace(fullName)) return fullName;
-            // Видаляємо розмір у форматі "100х170" або "100x170" з кінця рядка
-            return System.Text.RegularExpressions.Regex
-                .Replace(fullName.Trim(), @"\s+\d+[хxХX]\d+\s*$", "")
-                .Trim();
-        }
-
-        private static decimal ParseDecimal(string value)
-            => decimal.TryParse(value.Replace(",", "."), System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture, out var result) ? result : 0;
-
-        private static decimal? ParseNullableDecimal(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value) || value == "0") return null;
-            return decimal.TryParse(value.Replace(",", "."), System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture, out var result) ? result : null;
-        }
     }
 }

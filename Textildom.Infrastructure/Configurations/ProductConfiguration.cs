@@ -17,7 +17,17 @@ namespace Textildom.Infrastructure.Configurations
                 .HasMaxLength(200);
 
             builder.Property(p => p.Description)
-                .HasMaxLength(5000); // збільшили бо опис з Excel довгий
+                .HasMaxLength(5000);
+
+            builder.Property(p => p.Manufacturer).HasMaxLength(200);
+            builder.Property(p => p.Material).HasMaxLength(200);
+            builder.Property(p => p.Colour).HasMaxLength(200);
+            builder.Property(p => p.Features).HasMaxLength(500);
+            builder.Property(p => p.CareInstructions).HasMaxLength(500);
+            builder.Property(p => p.Fastening).HasMaxLength(200);
+            builder.Property(p => p.ProductType).HasMaxLength(200);
+            builder.Property(p => p.Purpose).HasMaxLength(200);
+            builder.Property(p => p.Decoration).HasMaxLength(200);
 
             builder.Property(p => p.VariantsJson)
                 .HasColumnName("Variants")
@@ -36,7 +46,6 @@ namespace Textildom.Infrastructure.Configurations
             builder.Ignore(p => p.Variants);
             builder.Ignore(p => p.ProductImages);
 
-            // SubCategoryId видалено, CategoryId залишається
             builder.HasOne(p => p.Category)
                 .WithMany(c => c.Products)
                 .HasForeignKey(p => p.CategoryId)

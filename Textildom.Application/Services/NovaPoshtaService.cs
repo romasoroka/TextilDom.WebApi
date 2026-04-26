@@ -80,32 +80,52 @@ namespace Textildom.Application.Services
 
         public async Task<NovaTtnResultDto> CreateShipmentAsync(CreateTtnCommand command)
         {
+            // Визначаємо тип оплати
+            var payerType = command.CashOnDelivery ? "Recipient" : "Sender";
+            var paymentMethod = command.CashOnDelivery ? "Cash" : "NonCash";
+
+            var methodProperties = new Dictionary<string, object>
+            {
+                ["PayerType"] = payerType,
+                ["PaymentMethod"] = paymentMethod,
+                ["ServiceType"] = command.ServiceType,
+                ["CargoType"] = command.CargoType,
+                ["CitySender"] = command.CitySenderRef,
+                ["CityRecipient"] = command.CityRecipientRef,
+                ["SenderAddress"] = command.WarehouseSenderRef,
+                ["RecipientAddress"] = command.WarehouseRecipientRef,
+                ["Sender"] = command.SenderRef,
+                ["ContactSender"] = command.ContactSenderRef,
+                ["SendersPhone"] = command.SendersPhone,
+                ["Recipient"] = command.RecipientRef,
+                ["ContactRecipient"] = command.ContactRecipientRef,
+                ["RecipientsPhone"] = command.RecipientPhone,
+                ["Cost"] = command.Cost.ToString(),
+                ["Weight"] = command.Weight.ToString(),
+                ["SeatsAmount"] = command.SeatsAmount.ToString(),
+                ["Description"] = command.Description,
+            };
+
+            // Накладений платіж — додаємо суму
+            if (command.CashOnDelivery && command.CashOnDeliveryAmount > 0)
+            {
+                methodProperties["BackwardDeliveryData"] = new[]
+                {
+            new
+            {
+                PayerType = "Recipient",
+                CargoType = "Money",
+                RedeliveryString = command.CashOnDeliveryAmount.ToString()
+            }
+        };
+            }
+
             var req = new
             {
                 apiKey = _apiKey,
                 modelName = "InternetDocument",
                 calledMethod = "save",
-                methodProperties = new
-                {
-                    PayerType = command.PayerType,
-                    PaymentMethod = command.PaymentMethod,
-                    ServiceType = command.ServiceType,
-                    CargoType = command.CargoType,
-                    CitySender = command.CitySenderRef,
-                    CityRecipient = command.CityRecipientRef,
-                    SenderAddress = command.WarehouseSenderRef,
-                    RecipientAddress = command.WarehouseRecipientRef,
-                    Sender = command.SenderRef,
-                    ContactSender = command.ContactSenderRef,
-                    SendersPhone = command.SendersPhone,
-                    Recipient = command.RecipientRef,
-                    ContactRecipient = command.ContactRecipientRef,
-                    RecipientsPhone = command.RecipientPhone,
-                    Cost = command.Cost.ToString(),
-                    Weight = command.Weight.ToString(),
-                    SeatsAmount = command.SeatsAmount.ToString(),
-                    Description = command.Description,
-                }
+                methodProperties
             };
 
             var res = await PostAsync<NovaResponse<object>>(req);

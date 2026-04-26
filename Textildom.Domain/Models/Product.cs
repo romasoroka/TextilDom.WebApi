@@ -7,22 +7,25 @@ namespace Textildom.Domain.Models
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
-        public decimal Discount { get; set; }
         public string Description { get; set; } = string.Empty;
-        public string VariantsJson { get; set; } = string.Empty;
-        public string ProductImagesJson { get; set; } = string.Empty;
+        public string? Manufacturer { get; set; }
+        public string? Material { get; set; }
+        public string? Colour { get; set; }
+        public string? Features { get; set; }
+        public string? CareInstructions { get; set; }
+        public string? Fastening { get; set; }
+        public string? ProductType { get; set; }
+        public string? Purpose { get; set; }
+        public string? Decoration { get; set; }
 
-        // Flags
         public bool IsSpecialOffer { get; set; } = false;
         public bool IsTop { get; set; } = false;
 
-        // Foreign keys
         public int? CategoryId { get; set; }
-        public int? SubCategoryId { get; set; }
-
-        // Navigation properties
         public Category? Category { get; set; }
-        public SubCategory? SubCategory { get; set; }
+
+        public string VariantsJson { get; set; } = string.Empty;
+        public string ProductImagesJson { get; set; } = string.Empty;
 
         [NotMapped]
         public List<ProductVariant> Variants
@@ -43,18 +46,15 @@ namespace Textildom.Domain.Models
         }
     }
 
-    /// <summary>
-    /// Варіант товару з ціною та оптовими цінами
-    /// </summary>
     public class ProductVariant
     {
-        public decimal Width { get; set; }   // Ширина|24907
-        public decimal Height { get; set; }  // Висота|24906
-        public string? Colour { get; set; }  // Цвет|24909
-        public decimal Price { get; set; }   // Цена
-        public decimal? OldPrice { get; set; } // Старая цена
-        public decimal? PromoPrice { get; set; } // Цена промо
-        public int Stock { get; set; }       // Остатки
+        public decimal Width { get; set; }
+        public decimal Height { get; set; }
+        public string? Colour { get; set; }
+        public decimal Price { get; set; }
+        public decimal? OldPrice { get; set; }
+        public bool InStock { get; set; }
+        public string? Quantity { get; set; } 
     }
 
     public class ProductImage

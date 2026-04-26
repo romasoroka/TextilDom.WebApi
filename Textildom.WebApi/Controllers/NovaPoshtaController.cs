@@ -1,7 +1,6 @@
-using Textildom.Application.NovaPoshta.Commands;
-using Textildom.Application.NovaPoshta.Dtos;
-using Textildom.Application.Services.Abstractions;
 using Microsoft.AspNetCore.Mvc;
+using Textildom.Application.NovaPoshta.Commands;
+using Textildom.Application.Services.Abstractions;
 
 namespace Textildom.WebApi.Controllers
 {
@@ -10,10 +9,12 @@ namespace Textildom.WebApi.Controllers
     public class NovaPoshtaController : ControllerBase
     {
         private readonly INovaPoshtaService _nova;
+        private readonly IConfiguration _configuration;
 
-        public NovaPoshtaController(INovaPoshtaService nova)
+        public NovaPoshtaController(INovaPoshtaService nova, IConfiguration configuration)
         {
             _nova = nova;
+            _configuration = configuration;
         }
 
         [HttpGet("cities")]
@@ -37,6 +38,13 @@ namespace Textildom.WebApi.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
+            // Підставляємо дані відправника з конфігу
+            command.SenderRef = _configuration["NovaPoshta:Sender:SenderRef"] ?? "";
+            command.ContactSenderRef = _configuration["NovaPoshta:Sender:ContactSenderRef"] ?? "";
+            command.CitySenderRef = _configuration["NovaPoshta:Sender:CitySenderRef"] ?? "";
+            command.WarehouseSenderRef = _configuration["NovaPoshta:Sender:WarehouseSenderRef"] ?? "";
+            command.SendersPhone = _configuration["NovaPoshta:Sender:SendersPhone"] ?? "";
+
             var nameParts = command.RecipientName.Trim().Split(' ');
             var (recipientRef, contactRef) = await _nova.CreateRecipientAsync(
                 lastName: nameParts.ElementAtOrDefault(0) ?? "",
@@ -50,6 +58,7 @@ namespace Textildom.WebApi.Controllers
 
             var res = await _nova.CreateShipmentAsync(command);
             if (!res.Success) return BadRequest(new { message = res.Error });
+
             return Ok(res);
         }
     }

@@ -15,7 +15,6 @@ namespace Textildom.Infrastructure.Repositories
         {
             return await _dbSet
                 .Include(p => p.Category)
-                .Include(p => p.SubCategory)
                 .Where(p => p.Name.ToLower().Contains(name.ToLower()))
                 .ToListAsync();
         }
@@ -24,7 +23,6 @@ namespace Textildom.Infrastructure.Repositories
         {
             return await _dbSet
                 .Include(p => p.Category)
-                .Include(p => p.SubCategory)
                 .Where(p => p.CategoryId == categoryId)
                 .ToListAsync();
         }
@@ -35,7 +33,6 @@ namespace Textildom.Infrastructure.Repositories
         {
             return await _dbSet
                 .Include(p => p.Category)
-                .Include(p => p.SubCategory)
                 .ToListAsync();
         }
 
@@ -43,7 +40,6 @@ namespace Textildom.Infrastructure.Repositories
         {
             return await _dbSet
                 .Include(p => p.Category)
-                .Include(p => p.SubCategory)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
     }
