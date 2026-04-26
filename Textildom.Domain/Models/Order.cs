@@ -21,6 +21,7 @@ namespace Textildom.Domain.Models
 
         public decimal TotalAmount { get; set; }
         public string OrderStatus { get; set; } = "Нове";
+        public string PaymentType { get; set; } = "Online";
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public string? Comment { get; set; }
 

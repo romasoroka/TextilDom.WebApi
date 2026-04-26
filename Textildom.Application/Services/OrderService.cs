@@ -45,29 +45,37 @@ namespace Textildom.Application.Services
             order.OrderItems = command.OrderItems;
             order.TotalAmount = command.OrderItems.Sum(item => item.Price * item.Quantity);
             order.OrderStatus = "Нове";
-            order.PaymentStatus = "Очікує оплати";
+            order.PaymentType = command.PaymentType;
             order.CreatedAt = DateTime.UtcNow;
+
+            order.PaymentStatus = command.PaymentType == "IBAN"
+                ? "Очікує переказу"
+                : "Очікує оплати";
 
             await _orderRepo.AddAsync(order);
 
-            // Створюємо Mono інвойс
-            var invoiceComment = $"Замовлення #{order.Id}";
-            var invoice = await _mono.CreateInvoiceAsync(order.Id, order.TotalAmount, invoiceComment);
+            string? paymentUrl = null;
 
-            if (invoice.Success && invoice.InvoiceId != null)
+            if (command.PaymentType == "Online")
             {
-                order.MonoInvoiceId = invoice.InvoiceId;
-                await _orderRepo.UpdateAsync(order);
+                var invoiceComment = $"Замовлення #{order.Id}";
+                var invoice = await _mono.CreateInvoiceAsync(order.Id, order.TotalAmount, invoiceComment);
+
+                if (invoice.Success && invoice.InvoiceId != null)
+                {
+                    order.MonoInvoiceId = invoice.InvoiceId;
+                    await _orderRepo.UpdateAsync(order);
+                    paymentUrl = invoice.PageUrl;
+                }
             }
 
-            // Telegram — шлємо після отримання посилання
-            var telegramMessage = FormatOrderMessage(order, invoice.PageUrl);
+            var telegramMessage = FormatOrderMessage(order, paymentUrl);
             await _telegramBot.SendOrderNotificationAsync(telegramMessage);
 
             return new CreateOrderResult
             {
                 Order = _mapper.Map<OrderDto>(order),
-                PaymentUrl = invoice.PageUrl,
+                PaymentUrl = paymentUrl,
             };
         }
 

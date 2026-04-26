@@ -10,6 +10,7 @@ namespace Textildom.Application.Orders.Commands
         public string CityName { get; set; } = string.Empty;
         public string WarehouseRef { get; set; } = string.Empty;
         public string WarehouseAddress { get; set; } = string.Empty;
+        public string PaymentType { get; set; } = "Online";
         public string? Comment { get; set; }
         public List<OrderItem> OrderItems { get; set; } = new();
     }

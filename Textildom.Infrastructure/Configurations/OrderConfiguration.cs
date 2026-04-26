@@ -20,6 +20,11 @@ namespace Textildom.Infrastructure.Configurations
                 .HasMaxLength(20)
                 .HasColumnType("varchar(20)");
 
+            builder.Property(o => o.PaymentType)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasColumnType("varchar(50)")
+                .HasDefaultValue("Online");
             builder.Property(o => o.CityRef)
                 .IsRequired()
                 .HasMaxLength(100)
