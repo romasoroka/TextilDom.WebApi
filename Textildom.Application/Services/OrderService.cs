@@ -81,14 +81,15 @@ namespace Textildom.Application.Services
 
         public async Task<bool> HandleMonoWebhookAsync(MonoWebhookPayload payload)
         {
-            // Шукаємо замовлення за reference (orderId)
-            if (!int.TryParse(payload.Data?.Info?.MerchantPaymInfo?.Reference, out var orderId))
+            Console.WriteLine($"Mono webhook: status={payload.Status}, ref={payload.Reference}");
+
+            if (!int.TryParse(payload.Reference, out var orderId))
                 return false;
 
             var order = await _orderRepo.GetByIdAsync(orderId);
             if (order == null) return false;
 
-            order.PaymentStatus = payload.Data?.Status switch
+            order.PaymentStatus = payload.Status switch
             {
                 "success" => "Оплачено",
                 "failure" or "reversed" => "Скасовано",
