@@ -1,10 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 using Textildom.Application.Orders.Commands;
 using Textildom.Application.Orders.Dtos;
 using Textildom.Application.Services;
 using Textildom.Application.Services.Abstractions;
 using Textildom.Domain.Constants;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Textildom.WebApi.Controllers
 {
@@ -51,10 +52,18 @@ namespace Textildom.WebApi.Controllers
 
         // Mono викликає цей endpoint після оплати
         [HttpPost("mono-webhook")]
-        public async Task<IActionResult> MonoWebhook([FromBody] MonoWebhookPayload payload)
+        public async Task<IActionResult> MonoWebhook([FromBody] JsonElement rawPayload)
         {
-            await _service.HandleMonoWebhookAsync(payload);
-            return Ok(); // Mono чекає 200, інакше буде ретраїти
+            Console.WriteLine($"=== MONO WEBHOOK HIT ===");
+            Console.WriteLine(rawPayload.ToString());
+
+            var payload = System.Text.Json.JsonSerializer.Deserialize<MonoWebhookPayload>(
+                rawPayload.ToString(),
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            );
+
+            await _service.HandleMonoWebhookAsync(payload!);
+            return Ok();
         }
 
         [HttpPut]
