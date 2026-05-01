@@ -60,97 +60,77 @@ namespace Textildom.Application.Services
         public async Task<ImportProductsResult> ImportFromExcelAsync(ImportProductsCommand command)
         {
             var result = new ImportProductsResult();
-
             using var stream = command.File.OpenReadStream();
             using var workbook = new XLWorkbook(stream);
-            var sheet = workbook.Worksheet(1);
-            var rows = sheet.RowsUsed().ToList();
-            if (rows.Count < 2) return result;
 
-            var headerRow = rows[0];
-            var headers = headerRow.Cells()
-                .Select((cell, idx) => new { Name = cell.GetString().Trim(), Index = idx + 1 })
-                .ToDictionary(h => h.Name, h => h.Index);
-
-            int Col(string name) => headers.TryGetValue(name, out var idx) ? idx : -1;
-            string GetCell(IXLRow row, int colIndex) => colIndex > 0 ? row.Cell(colIndex).GetString().Trim() : "";
-
-            // Групуємо по базовій назві (без розміру в кінці)
-            var grouped = rows.Skip(1)
-                .GroupBy(row => ExtractBaseName(GetCell(row, Col("Назва (укр)"))))
-                .ToList();
-
-            foreach (var group in grouped)
+            foreach (var sheet in workbook.Worksheets)
             {
-                try
+                Console.WriteLine($"Processing sheet: {sheet.Name}");
+
+                var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
+                if (lastRow < 2) continue;
+
+                var headerRow = sheet.Row(1);
+                var headers = headerRow.Cells()
+                    .Select((cell, idx) => new { Name = cell.GetString().Trim(), Index = idx + 1 })
+                    .ToDictionary(h => h.Name, h => h.Index, StringComparer.OrdinalIgnoreCase);
+
+                int Col(string name) => headers.TryGetValue(name, out var idx) ? idx : -1;
+                string GetCell(IXLRow row, int colIndex) => colIndex > 0 ? row.Cell(colIndex).GetString().Trim() : "";
+
+                for (int i = 2; i <= lastRow; i++)
                 {
-                    var baseName = group.Key;
-                    if (string.IsNullOrWhiteSpace(baseName)) continue;
-
-                    var firstRow = group.First();
-
-                    // Кожен рядок = окремий варіант
-                    var variants = group.Select(row => new ProductVariant
+                    var row = sheet.Row(i);
+                    try
                     {
-                        Width = ParseDecimal(GetCell(row, Col("Ширина|24907"))),
-                        Height = ParseDecimal(GetCell(row, Col("Высота|24906"))),
-                        Colour = GetCell(row, Col("Цвет|24909")),
-                        Price = ParseDecimal(GetCell(row, Col("Цена"))),
-                        OldPrice = ParseNullableDecimal(GetCell(row, Col("Старая цена"))),
-                        InStock = GetCell(row, Col("Наличие")).Contains("наличии", StringComparison.OrdinalIgnoreCase),
-                        Quantity = GetCell(row, Col("Комплектация;UA|24482")),
-                    }).ToList();
+                        var name = GetCell(row, Col("Назва (укр)"));
+                        if (string.IsNullOrWhiteSpace(name)) continue;
 
-                    // Фото з першого рядка групи
-                    var imagesRaw = GetCell(firstRow, Col("Изображения"));
-                    var images = imagesRaw
-                        .Split(';', StringSplitOptions.RemoveEmptyEntries)
-                        .Select((url, i) => new ProductImage
+                        var imagesRaw = GetCell(row, Col("Изображения"));
+                        var images = imagesRaw
+                            .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                            .Select((url, idx) => new ProductImage
+                            {
+                                Url = url.Trim(),
+                                IsMain = idx == 0,
+                                Colour = null
+                            }).ToList();
+
+                        var variant = new ProductVariant
                         {
-                            Url = url.Trim(),
-                            IsMain = i == 0,
-                            Colour = null
-                        }).ToList();
+                            Width = 0,
+                            Height = 0,
+                            Colour = null,
+                            Price = ParseDecimal(GetCell(row, Col("Цена"))),
+                            OldPrice = ParseNullableDecimal(GetCell(row, Col("Старая цена"))),
+                            InStock = GetCell(row, Col("Наличие")).Contains("наличии", StringComparison.OrdinalIgnoreCase),
+                            Quantity = null,
+                        };
 
-                    var product = new Product
+                        var product = new Product
+                        {
+                            Name = name,
+                            Description = GetCell(row, Col("Полное описание (UA)")),
+                            Manufacturer = GetCell(row, Col("Производитель")),
+                            Variants = new List<ProductVariant> { variant },
+                            ProductImages = images,
+                            IsSpecialOffer = false,
+                            IsTop = false,
+                        };
+
+                        await _productRepo.AddAsync(product);
+                        result.Created++;
+                    }
+                    catch (Exception ex)
                     {
-                        Name = baseName,
-                        Description = GetCell(firstRow, Col("Полное описание (UA)")),
-                        Manufacturer = GetCell(firstRow, Col("Производитель")),
-                        Material = GetCell(firstRow, Col("Материал|24904")),
-                        Colour = GetCell(firstRow, Col("Цвет|24909")),
-                        Features = GetCell(firstRow, Col("Особенности|130872")),
-                        CareInstructions = GetCell(firstRow, Col("Рекомендации по уходу|122426")),
-                        Fastening = GetCell(firstRow, Col("Способ крепления|24905")),
-                        ProductType = GetCell(firstRow, Col("Тип|24902")),
-                        Purpose = GetCell(firstRow, Col("Назначение|244048")),
-                        Decoration = GetCell(firstRow, Col("Декорирование|113211")),
-                        Variants = variants,
-                        ProductImages = images,
-                        CategoryId = null,
-                        IsSpecialOffer = false,
-                        IsTop = false,
-                    };
-
-                    await _productRepo.AddAsync(product);
-                    result.Created++;
-                }
-                catch (Exception ex)
-                {
-                    result.Errors.Add($"Група '{group.Key}': {ex.Message}");
-                    result.Skipped++;
+                        result.Errors.Add($"Аркуш '{sheet.Name}', рядок {i}: {ex.Message}");
+                        result.Skipped++;
+                    }
                 }
             }
 
             return result;
         }
-
-        private static string ExtractBaseName(string fullName)
-        {
-            if (string.IsNullOrWhiteSpace(fullName)) return fullName;
-            return Regex.Replace(fullName.Trim(), @"\s+\d+[хxХX]\d+\s*$", "").Trim();
-        }
-
         private static decimal ParseDecimal(string value)
             => decimal.TryParse(value.Replace(",", "."), NumberStyles.Any,
                 CultureInfo.InvariantCulture, out var r) ? r : 0;

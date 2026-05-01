@@ -1,8 +1,9 @@
-﻿using Textildom.Application.Products.Commands;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Timeouts;
+using Microsoft.AspNetCore.Mvc;
+using Textildom.Application.Products.Commands;
 using Textildom.Application.Services.Abstractions;
 using Textildom.Domain.Constants;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Textildom.WebApi.Controllers
 {
@@ -116,6 +117,7 @@ namespace Textildom.WebApi.Controllers
         [HttpPost("import")]
         [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.User}")]
         [Consumes("multipart/form-data")]
+        [RequestTimeout(600000)]
         public async Task<IActionResult> Import([FromForm] ImportProductsCommand request)
         {
             if (request.File == null || request.File.Length == 0)

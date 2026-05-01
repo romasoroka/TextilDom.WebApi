@@ -49,7 +49,7 @@ namespace Textildom.Application.Services
             order.CreatedAt = DateTime.UtcNow;
 
             order.PaymentStatus = command.PaymentType == "IBAN"
-                ? "Очікує переказу"
+                ? "Очікує переказу IBAN"
                 : "Очікує оплати";
 
             await _orderRepo.AddAsync(order);

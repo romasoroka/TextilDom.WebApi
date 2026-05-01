@@ -1,20 +1,21 @@
-﻿using Textildom.Application.IRepositories;
-using Textildom.Application.MappingProfiles;
-using Textildom.Application.Products.Validators;
-using Textildom.Application.Users.Validators;
-using Textildom.Application.Categories.Validators;
-using Textildom.Application.Orders.Validators;
-using Textildom.Application.Services;
-using Textildom.Application.Services.Abstractions;
-using Textildom.Infrastructure.Context;
-using Textildom.Infrastructure.Repositories;
-using FluentValidation;
+﻿using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using Textildom.Application.Categories.Validators;
+using Textildom.Application.IRepositories;
+using Textildom.Application.MappingProfiles;
+using Textildom.Application.Orders.Validators;
+using Textildom.Application.Products.Validators;
+using Textildom.Application.Services;
+using Textildom.Application.Services.Abstractions;
+using Textildom.Application.Users.Validators;
+using Textildom.Infrastructure.Context;
+using Textildom.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,7 +38,16 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<INovaPoshtaService, NovaPoshtaService>();
 
 builder.Services.AddHttpClient<IMonoService, MonoService>();
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 104857600; 
+});
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(10);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(10);
+});
 builder.Services.AddHttpClient<ITelegramBotService, TelegramBotService>();
 
 builder.Services.AddAutoMapper(typeof(ProductProfile).Assembly);
