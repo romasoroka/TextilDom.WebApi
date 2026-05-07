@@ -27,10 +27,11 @@ namespace Textildom.Application.MappingProfiles
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : null));
 
             CreateMap<UpdateProductCommand, Product>()
-                .ForMember(dest => dest.Variants, opt => opt.MapFrom(src => src.Variants))
-                .ForMember(dest => dest.ProductImagesJson, opt => opt.Ignore())
-                .ForMember(dest => dest.VariantsJson, opt => opt.Ignore())
-                .ForMember(dest => dest.Category, opt => opt.Ignore());
+                 .ForMember(dest => dest.Variants, opt => opt.MapFrom(src => src.Variants))
+                 .ForMember(dest => dest.ProductImagesJson, opt => opt.Ignore())
+                 .ForMember(dest => dest.VariantsJson, opt => opt.Ignore())
+                 .ForMember(dest => dest.Category, opt => opt.Ignore())
+                 .ForMember(dest => dest.ProductImages, opt => opt.Ignore()); 
         }
     }
 }

@@ -24,9 +24,7 @@ namespace Textildom.Application.Orders.Validators
                 .NotEmpty().WithMessage("Відділення є обов'язковим.");
 
             RuleFor(o => o.OrderStatus)
-                .NotEmpty().WithMessage("Статус замовлення є обов'язковим.")
-                .Must(s => new[] { "Нове", "В обробці", "Відправлено", "Виконано", "Скасовано" }.Contains(s))
-                .WithMessage("Невірний статус замовлення.");
+                .NotEmpty().WithMessage("Статус замовлення є обов'язковим.");
 
             RuleFor(o => o.Comment)
                 .MaximumLength(1000).WithMessage("Коментар не може перевищувати 1000 символів.");

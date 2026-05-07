@@ -147,7 +147,24 @@ namespace Textildom.WebApi.Controllers
 
             return result ? NoContent() : NotFound();
         }
+        [HttpDelete("bulk")]
+        [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.User}")]
+        public async Task<IActionResult> DeleteMany([FromBody] List<int> ids)
+        {
+            if (ids == null || ids.Count == 0)
+                return BadRequest("Список id не може бути порожнім");
 
+            var deleted = await _service.DeleteManyAsync(ids);
+            return Ok(new { deleted });
+        }
+        [HttpPost]
+        [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.User}")]
+        public async Task<IActionResult> Create([FromBody] CreateProductManualCommand command)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var product = await _service.CreateManualAsync(command);
+            return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
+        }
         // Helper методи для пагінації та фільтрації
         private IEnumerable<Application.Products.Dtos.ProductShortDto> FilterByPriceRange(
             IEnumerable<Application.Products.Dtos.ProductShortDto> products,

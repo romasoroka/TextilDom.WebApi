@@ -26,7 +26,44 @@ namespace Textildom.Application.Services
             var products = await _productRepo.GetAllAsync();
             return _mapper.Map<IEnumerable<ProductShortDto>>(products);
         }
+        public async Task<ProductDto> CreateManualAsync(CreateProductManualCommand command)
+        {
+            var product = new Product
+            {
+                Name = command.Name,
+                Description = command.Description ?? "",
+                Manufacturer = command.Manufacturer,
+                Material = command.Material,
+                Features = command.Features,
+                CareInstructions = command.CareInstructions,
+                Fastening = command.Fastening,
+                ProductType = command.ProductType,
+                Purpose = command.Purpose,
+                Decoration = command.Decoration,
+                IsSpecialOffer = command.IsSpecialOffer,
+                IsTop = command.IsTop,
+                CategoryId = command.CategoryId,
+                Variants = command.Variants.Select(v => new ProductVariant
+                {
+                    Width = v.Width,
+                    Height = v.Height,
+                    Colour = v.Colour,
+                    Price = v.Price,
+                    OldPrice = v.OldPrice,
+                    InStock = v.InStock,
+                    Quantity = v.Quantity,
+                }).ToList(),
+                ProductImages = command.ImageUrls.Select((url, i) => new ProductImage
+                {
+                    Url = url,
+                    IsMain = i == 0,
+                    Colour = null
+                }).ToList(),
+            };
 
+            await _productRepo.AddAsync(product);
+            return _mapper.Map<ProductDto>(product);
+        }
         public async Task<ProductDto?> GetByIdAsync(int id)
         {
             var product = await _productRepo.GetByIdAsync(id);
@@ -131,6 +168,18 @@ namespace Textildom.Application.Services
 
             return result;
         }
+        public async Task<int> DeleteManyAsync(List<int> ids)
+        {
+            int deleted = 0;
+            foreach (var id in ids)
+            {
+                var product = await _productRepo.GetByIdAsync(id);
+                if (product == null) continue;
+                await _productRepo.RemoveAsync(product);
+                deleted++;
+            }
+            return deleted;
+        }
         private static decimal ParseDecimal(string value)
             => decimal.TryParse(value.Replace(",", "."), NumberStyles.Any,
                 CultureInfo.InvariantCulture, out var r) ? r : 0;
@@ -153,7 +202,41 @@ namespace Textildom.Application.Services
             if (command.IsSpecialOffer && !existing.IsSpecialOffer)
                 await RemoveSpecialOfferFromAllProductsAsync(command.Id);
 
+            // Зберігаємо поточні зображення перед маппінгом
+            var images = existing.ProductImages.ToList();
+
             _mapper.Map(command, existing);
+
+            if (command.RemoveImageUrls != null && command.RemoveImageUrls.Any())
+            {
+                images = images
+                    .Where(img => !command.RemoveImageUrls
+                        .Any(url => string.Equals(url.Trim(), img.Url.Trim(), StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+            }
+
+            if (command.AddImageUrls != null && command.AddImageUrls.Any())
+            {
+                var existingUrls = images.Select(i => i.Url.Trim().ToLower()).ToHashSet();
+                foreach (var url in command.AddImageUrls)
+                {
+                    if (string.IsNullOrWhiteSpace(url)) continue;
+                    if (existingUrls.Contains(url.Trim().ToLower())) continue;
+
+                    images.Add(new ProductImage
+                    {
+                        Url = url.Trim(),
+                        IsMain = images.Count == 0,
+                        Colour = null
+                    });
+                }
+            }
+
+            if (images.Any() && !images.Any(i => i.IsMain))
+                images[0].IsMain = true;
+
+            existing.ProductImages = images;
+
             return await _productRepo.UpdateAsync(existing);
         }
 
