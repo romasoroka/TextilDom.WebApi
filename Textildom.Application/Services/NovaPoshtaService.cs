@@ -80,16 +80,17 @@ namespace Textildom.Application.Services
 
         public async Task<NovaTtnResultDto> CreateShipmentAsync(CreateTtnCommand command)
         {
-            // Визначаємо тип оплати
-            var payerType = command.CashOnDelivery ? "Recipient" : "Sender";
-            var paymentMethod = command.CashOnDelivery ? "Cash" : "NonCash";
-            var cargoType = command.CashOnDelivery ? "Cargo" : command.CargoType;
+            // Важливо: для контролю оплати CargoType зазвичай Parcel.
+            // Платник доставки - Recipient (Отримувач), Метод - Cash (Готівка)
+            var payerType = "Recipient";
+            var paymentMethod = "Cash";
+            var cargoType = "Parcel";
 
             var methodProperties = new Dictionary<string, object>
             {
                 ["PayerType"] = payerType,
                 ["PaymentMethod"] = paymentMethod,
-                ["ServiceType"] = command.ServiceType,
+                ["ServiceType"] = command.ServiceType, // WarehouseWarehouse
                 ["CargoType"] = cargoType,
                 ["CitySender"] = command.CitySenderRef,
                 ["CityRecipient"] = command.CityRecipientRef,
@@ -103,21 +104,33 @@ namespace Textildom.Application.Services
                 ["RecipientsPhone"] = command.RecipientPhone,
                 ["Cost"] = command.Cost.ToString(),
                 ["Weight"] = command.Weight.ToString(),
-                ["SeatsAmount"] = command.SeatsAmount.ToString(),
-                ["Description"] = command.Description,
+                ["SeatsAmount"] = "1",
+                ["Description"] = "Текстильні вироби",
+                ["OptionsSeat"] = new[]
+                {
+            new
+            {
+                volumetricVolume = "1.88",
+                weight = command.Weight.ToString(),
+                volumetricWidth = "25",
+                volumetricLength = "30",
+                volumetricHeight = "10"
+            }
+        }
             };
 
+            // ЛОГІКА ДЛЯ МАГАЗИНІВ (ПІСЛЯПЛАТА НА РАХУНОК)
             if (command.CashOnDelivery && command.CashOnDeliveryAmount > 0)
             {
-                methodProperties["BackwardDeliveryData"] = new[]
-                {
-                    new
-                    {
-                        PayerType = "Recipient",
-                        CargoType = "Money",
-                        RedeliveryString = command.CashOnDeliveryAmount // decimal, не ToString()
-                    }
-                };
+                // 1. Прибираємо BackwardDeliveryData (вона для приватних осіб)
+                // 2. Використовуємо вузол AfterpaymentOnGoodsCost
+                methodProperties["AfterpaymentOnGoodsCost"] = command.CashOnDeliveryAmount.ToString();
+
+                // 3. Деякі ФОП мають використовувати таку структуру PaymentControl
+                // Якщо AfterpaymentOnGoodsCost не спрацює, НП очікує таке:
+                /*
+                methodProperties["PaymentControl"] = command.CashOnDeliveryAmount.ToString();
+                */
             }
 
             var req = new
@@ -129,6 +142,7 @@ namespace Textildom.Application.Services
             };
 
             var res = await PostAsync<NovaResponse<object>>(req);
+
             if (res == null) return new NovaTtnResultDto { Success = false, Error = "Empty response" };
 
             if (res.Success && res.Data != null && res.Data.Any())
@@ -137,12 +151,13 @@ namespace Textildom.Application.Services
                 var json = JsonSerializer.Serialize(first);
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
-                string? intDoc = null;
-                string? @ref = null;
-                if (root.TryGetProperty("IntDocNumber", out var intProp)) intDoc = intProp.GetString();
-                if (root.TryGetProperty("Ref", out var refProp)) @ref = refProp.GetString();
 
-                return new NovaTtnResultDto { Success = true, IntDocNumber = intDoc, Ref = @ref };
+                return new NovaTtnResultDto
+                {
+                    Success = true,
+                    IntDocNumber = root.TryGetProperty("IntDocNumber", out var intProp) ? intProp.GetString() : null,
+                    Ref = root.TryGetProperty("Ref", out var refProp) ? refProp.GetString() : null
+                };
             }
 
             return new NovaTtnResultDto
