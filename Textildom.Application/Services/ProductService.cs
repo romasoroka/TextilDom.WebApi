@@ -168,6 +168,51 @@ namespace Textildom.Application.Services
 
             return result;
         }
+        public async Task<byte[]> ExportToExcelAsync()
+        {
+            var products = await _productRepo.GetAllAsync();
+
+            using var workbook = new XLWorkbook();
+            var sheet = workbook.Worksheets.Add("Товари");
+
+            // Заголовки ідентичні до імпорту
+            sheet.Cell(1, 1).Value = "ID";
+            sheet.Cell(1, 2).Value = "Назва (укр)";
+            sheet.Cell(1, 3).Value = "Полное описание (UA)";
+            sheet.Cell(1, 4).Value = "Производитель";
+            sheet.Cell(1, 5).Value = "Наличие";
+            sheet.Cell(1, 6).Value = "Цена";
+            sheet.Cell(1, 7).Value = "Старая цена";
+            sheet.Cell(1, 8).Value = "Изображения";
+
+            var headerRow = sheet.Row(1);
+            headerRow.Style.Font.Bold = true;
+            headerRow.Style.Fill.BackgroundColor = XLColor.LightBlue;
+
+            int row = 2;
+            foreach (var product in products)
+            {
+                var firstVariant = product.Variants.FirstOrDefault();
+                var images = string.Join(";", product.ProductImages.Select(i => i.Url));
+
+                sheet.Cell(row, 1).Value = product.Id;
+                sheet.Cell(row, 2).Value = product.Name;
+                sheet.Cell(row, 3).Value = product.Description;
+                sheet.Cell(row, 4).Value = product.Manufacturer ?? "";
+                sheet.Cell(row, 5).Value = firstVariant?.InStock == true ? "В наличии" : "Нет в наличии";
+                sheet.Cell(row, 6).Value = firstVariant?.Price ?? 0;
+                sheet.Cell(row, 7).Value = firstVariant?.OldPrice ?? 0;
+                sheet.Cell(row, 8).Value = images;
+
+                row++;
+            }
+
+            sheet.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            return stream.ToArray();
+        }
         public async Task<int> DeleteManyAsync(List<int> ids)
         {
             int deleted = 0;

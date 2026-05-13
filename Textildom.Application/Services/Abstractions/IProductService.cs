@@ -12,6 +12,7 @@ namespace Textildom.Application.Services.Abstractions
     public interface IProductService
     {
         Task<ImportProductsResult> ImportFromExcelAsync(ImportProductsCommand command);
+        Task<byte[]> ExportToExcelAsync();
         Task<IEnumerable<ProductShortDto>> GetAllAsync();
         Task<ProductDto?> GetByIdAsync(int id);
         Task<IEnumerable<ProductDto>> SearchByNameAsync(string name);

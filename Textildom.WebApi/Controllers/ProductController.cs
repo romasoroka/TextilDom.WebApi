@@ -147,6 +147,17 @@ namespace Textildom.WebApi.Controllers
 
             return result ? NoContent() : NotFound();
         }
+        [HttpGet("export")]
+        [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.User}")]
+        public async Task<IActionResult> Export()
+        {
+            var bytes = await _service.ExportToExcelAsync();
+            return File(
+                bytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"products_{DateTime.Now:yyyy-MM-dd}.xlsx"
+            );
+        }
         [HttpDelete("bulk")]
         [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.User}")]
         public async Task<IActionResult> DeleteMany([FromBody] List<int> ids)

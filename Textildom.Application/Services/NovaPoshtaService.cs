@@ -83,13 +83,14 @@ namespace Textildom.Application.Services
             // Визначаємо тип оплати
             var payerType = command.CashOnDelivery ? "Recipient" : "Sender";
             var paymentMethod = command.CashOnDelivery ? "Cash" : "NonCash";
+            var cargoType = command.CashOnDelivery ? "Cargo" : command.CargoType;
 
             var methodProperties = new Dictionary<string, object>
             {
                 ["PayerType"] = payerType,
                 ["PaymentMethod"] = paymentMethod,
                 ["ServiceType"] = command.ServiceType,
-                ["CargoType"] = command.CargoType,
+                ["CargoType"] = cargoType,
                 ["CitySender"] = command.CitySenderRef,
                 ["CityRecipient"] = command.CityRecipientRef,
                 ["SenderAddress"] = command.WarehouseSenderRef,
@@ -106,18 +107,17 @@ namespace Textildom.Application.Services
                 ["Description"] = command.Description,
             };
 
-            // Накладений платіж — додаємо суму
             if (command.CashOnDelivery && command.CashOnDeliveryAmount > 0)
             {
                 methodProperties["BackwardDeliveryData"] = new[]
                 {
-            new
-            {
-                PayerType = "Recipient",
-                CargoType = "Money",
-                RedeliveryString = command.CashOnDeliveryAmount.ToString()
-            }
-        };
+                    new
+                    {
+                        PayerType = "Recipient",
+                        CargoType = "Money",
+                        RedeliveryString = command.CashOnDeliveryAmount // decimal, не ToString()
+                    }
+                };
             }
 
             var req = new
