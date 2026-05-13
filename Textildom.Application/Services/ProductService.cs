@@ -13,11 +13,13 @@ namespace Textildom.Application.Services
     public class ProductService : IProductService
     {
         private readonly IProductRepository _productRepo;
+        private readonly ICategoryRepository _categoryRepo;
         private readonly IMapper _mapper;
 
-        public ProductService(IProductRepository productRepo, IMapper mapper)
+        public ProductService(IProductRepository productRepo, ICategoryRepository categoryRepo, IMapper mapper)
         {
             _productRepo = productRepo;
+            _categoryRepo = categoryRepo;
             _mapper = mapper;
         }
 
@@ -100,10 +102,11 @@ namespace Textildom.Application.Services
             using var stream = command.File.OpenReadStream();
             using var workbook = new XLWorkbook(stream);
 
+            // Кеш для категорій, щоб не робити зайвих запитів до БД
+            var categoryCache = new Dictionary<string, int>();
+
             foreach (var sheet in workbook.Worksheets)
             {
-                Console.WriteLine($"Processing sheet: {sheet.Name}");
-
                 var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
                 if (lastRow < 2) continue;
 
@@ -123,25 +126,42 @@ namespace Textildom.Application.Services
                         var name = GetCell(row, Col("Назва (укр)"));
                         if (string.IsNullOrWhiteSpace(name)) continue;
 
+                        var categoryName = GetCell(row, Col("Категория"));
+                        int? categoryId = null;
+
+                        if (!string.IsNullOrWhiteSpace(categoryName))
+                        {
+                            if (!categoryCache.TryGetValue(categoryName, out var id))
+                            {
+                                // Шукаємо категорію в БД
+                                var category = await _categoryRepo.GetByNameAsync(categoryName);
+                                if (category == null)
+                                {
+                                    // Якщо категорії немає — створюємо її
+                                    category = new Category { Name = categoryName };
+                                    await _categoryRepo.AddAsync(category);
+                                }
+                                id = category.Id;
+                                categoryCache[categoryName] = id;
+                            }
+                            categoryId = id;
+                        }
+                        // ------------------------
+
                         var imagesRaw = GetCell(row, Col("Изображения"));
                         var images = imagesRaw
                             .Split(';', StringSplitOptions.RemoveEmptyEntries)
                             .Select((url, idx) => new ProductImage
                             {
                                 Url = url.Trim(),
-                                IsMain = idx == 0,
-                                Colour = null
+                                IsMain = idx == 0
                             }).ToList();
 
                         var variant = new ProductVariant
                         {
-                            Width = 0,
-                            Height = 0,
-                            Colour = null,
                             Price = ParseDecimal(GetCell(row, Col("Цена"))),
                             OldPrice = ParseNullableDecimal(GetCell(row, Col("Старая цена"))),
                             InStock = GetCell(row, Col("Наличие")).Contains("наличии", StringComparison.OrdinalIgnoreCase),
-                            Quantity = null,
                         };
 
                         var product = new Product
@@ -149,10 +169,9 @@ namespace Textildom.Application.Services
                             Name = name,
                             Description = GetCell(row, Col("Полное описание (UA)")),
                             Manufacturer = GetCell(row, Col("Производитель")),
+                            CategoryId = categoryId, 
                             Variants = new List<ProductVariant> { variant },
-                            ProductImages = images,
-                            IsSpecialOffer = false,
-                            IsTop = false,
+                            ProductImages = images
                         };
 
                         await _productRepo.AddAsync(product);
@@ -165,54 +184,54 @@ namespace Textildom.Application.Services
                     }
                 }
             }
-
             return result;
         }
-        public async Task<byte[]> ExportToExcelAsync()
-        {
-            var products = await _productRepo.GetAllAsync();
+       public async Task<byte[]> ExportToExcelAsync()
+{
+    var products = await _productRepo.GetAllAsync(); // Важливо завантажити Category
 
-            using var workbook = new XLWorkbook();
-            var sheet = workbook.Worksheets.Add("Товари");
+    using var workbook = new XLWorkbook();
+    var sheet = workbook.Worksheets.Add("Товари");
 
-            // Заголовки ідентичні до імпорту
-            sheet.Cell(1, 1).Value = "ID";
-            sheet.Cell(1, 2).Value = "Назва (укр)";
-            sheet.Cell(1, 3).Value = "Полное описание (UA)";
-            sheet.Cell(1, 4).Value = "Производитель";
-            sheet.Cell(1, 5).Value = "Наличие";
-            sheet.Cell(1, 6).Value = "Цена";
-            sheet.Cell(1, 7).Value = "Старая цена";
-            sheet.Cell(1, 8).Value = "Изображения";
+    // Заголовки
+    sheet.Cell(1, 1).Value = "ID";
+    sheet.Cell(1, 2).Value = "Назва (укр)";
+    sheet.Cell(1, 3).Value = "Категория"; // Нове поле
+    sheet.Cell(1, 4).Value = "Полное описание (UA)";
+    sheet.Cell(1, 5).Value = "Производитель";
+    sheet.Cell(1, 6).Value = "Наличие";
+    sheet.Cell(1, 7).Value = "Цена";
+    sheet.Cell(1, 8).Value = "Старая цена";
+    sheet.Cell(1, 9).Value = "Изображения";
 
-            var headerRow = sheet.Row(1);
-            headerRow.Style.Font.Bold = true;
-            headerRow.Style.Fill.BackgroundColor = XLColor.LightBlue;
+    var headerRow = sheet.Row(1);
+    headerRow.Style.Font.Bold = true;
+    headerRow.Style.Fill.BackgroundColor = XLColor.LightBlue;
 
-            int row = 2;
-            foreach (var product in products)
-            {
-                var firstVariant = product.Variants.FirstOrDefault();
-                var images = string.Join(";", product.ProductImages.Select(i => i.Url));
+    int row = 2;
+    foreach (var product in products)
+    {
+        var firstVariant = product.Variants.FirstOrDefault();
+        var images = string.Join(";", product.ProductImages.Select(i => i.Url));
 
-                sheet.Cell(row, 1).Value = product.Id;
-                sheet.Cell(row, 2).Value = product.Name;
-                sheet.Cell(row, 3).Value = product.Description;
-                sheet.Cell(row, 4).Value = product.Manufacturer ?? "";
-                sheet.Cell(row, 5).Value = firstVariant?.InStock == true ? "В наличии" : "Нет в наличии";
-                sheet.Cell(row, 6).Value = firstVariant?.Price ?? 0;
-                sheet.Cell(row, 7).Value = firstVariant?.OldPrice ?? 0;
-                sheet.Cell(row, 8).Value = images;
+        sheet.Cell(row, 1).Value = product.Id.ToString();
+        sheet.Cell(row, 2).Value = product.Name;
+        sheet.Cell(row, 3).Value = product.Category?.Name ?? ""; // Назва категорії
+        sheet.Cell(row, 4).Value = product.Description;
+        sheet.Cell(row, 5).Value = product.Manufacturer ?? "";
+        sheet.Cell(row, 6).Value = firstVariant?.InStock == true ? "В наличии" : "Нет в наличии";
+        sheet.Cell(row, 7).Value = firstVariant?.Price ?? 0;
+        sheet.Cell(row, 8).Value = firstVariant?.OldPrice ?? 0;
+        sheet.Cell(row, 9).Value = images;
 
-                row++;
-            }
+        row++;
+    }
 
-            sheet.Columns().AdjustToContents();
-
-            using var stream = new MemoryStream();
-            workbook.SaveAs(stream);
-            return stream.ToArray();
-        }
+    sheet.Columns().AdjustToContents();
+    using var stream = new MemoryStream();
+    workbook.SaveAs(stream);
+    return stream.ToArray();
+}
         public async Task<int> DeleteManyAsync(List<int> ids)
         {
             int deleted = 0;

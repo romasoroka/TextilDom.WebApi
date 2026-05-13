@@ -18,7 +18,14 @@ namespace Textildom.Infrastructure.Repositories
                 .Where(p => p.Name.ToLower().Contains(name.ToLower()))
                 .ToListAsync();
         }
-        
+
+        public async Task<List<Product>> GetAllWithCategoryAsync()
+        {
+            return await _context.Products
+                .Include(p => p.Category)    
+                .ToListAsync();
+        }
+
         public async Task<List<Product>> GetByCategoryIdAsync(int categoryId)
         {
             return await _dbSet

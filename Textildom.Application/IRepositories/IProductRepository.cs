@@ -11,5 +11,6 @@ namespace Textildom.Application.IRepositories
     {
         Task<List<Product>> SearchByNameAsync(string name);
         Task<List<Product>> GetByCategoryIdAsync(int categoryId);
+        Task<List<Product>> GetAllWithCategoryAsync();
     }
 }

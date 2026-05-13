@@ -105,7 +105,7 @@ namespace Textildom.Application.Services
                 ["Cost"] = command.Cost.ToString(),
                 ["Weight"] = command.Weight.ToString(),
                 ["SeatsAmount"] = "1",
-                ["Description"] = "Текстильні вироби",
+                ["Description"] = command.Description,
                 ["OptionsSeat"] = new[]
                 {
             new
