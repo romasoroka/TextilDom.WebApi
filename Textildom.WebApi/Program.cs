@@ -131,6 +131,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/ping", () => Results.Ok(new { status = "active", timestamp = DateTime.UtcNow }));
 
 app.MapControllers();
 
